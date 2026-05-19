@@ -97,6 +97,10 @@ your sensors and servos. */
 #define DETECTION_YES   1
 
 // Motor speed definitions - Lab 4
+#define SPEED_0 0;
+#define SPEED_1 33;
+#define SPEED_2 66;
+#define SPEED_3 100;
 
 // Collision definitions
 #define COLLISION_ON   0
@@ -138,7 +142,8 @@ int ActionCollision = COLLISION_OFF;
 
 // Main motors Action (using Definitions)
 int ActionRobotDrive = DRIVE_STOP;
-// Add speed action in Lab 4
+// Add speed action
+int ActionRobotSpeed = SPEED_3;
 
 // Servo Action (using Definitions)
 int ActionServoMove =  SERVO_MOVE_STOP;
@@ -322,9 +327,6 @@ bool isCapacitiveSensorTouched() {
   } else {
     SensedCapacitiveTouch = DETECTION_NO;
   }
-  
-    
-  
 }
 
 
@@ -510,6 +512,19 @@ void fsmMoveServoUpAndDown() {
 ////////////////////////////////////////////////////////////////////
 void fsmCapacitiveSensorSpeedControl() {
   /*Implement in lab 4*/
+  static int speedControlState = 0;
+
+  switch(speedControlState){
+    case 0:
+      ActionRobotSpeed = SPEED_0;
+      
+
+    case 1:
+
+    case 2: 
+
+    case 3:
+  }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -517,6 +532,19 @@ void fsmCapacitiveSensorSpeedControl() {
 ////////////////////////////////////////////////////////////////////
 void fsmChangeSpeed() {
   /*Implement in lab 4*/
+   static int speedChangeState = 0;
+
+  switch(speedChangeState){
+    case 0:
+      
+
+    case 1:
+
+    case 2: 
+
+    case 3:
+  }
+  
 }
 
 
