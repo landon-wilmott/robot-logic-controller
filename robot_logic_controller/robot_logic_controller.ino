@@ -98,9 +98,9 @@ your sensors and servos. */
 
 // Motor speed definitions - Lab 4
 #define SPEED_0 0;
-#define SPEED_1 33;
-#define SPEED_2 66;
-#define SPEED_3 100;
+#define SPEED_1 (int)(255 * .33);
+#define SPEED_2 (int)(255 * .66); 
+#define SPEED_3 (int)(255);
 
 // Collision definitions
 #define COLLISION_ON   0
@@ -256,10 +256,14 @@ void RobotPerception() {
   
 
    // Capacitive Sensor
-   /*Add code in lab 4*/
+   if (isCapacitiveSensorTouched()){
+    SensedCapacitiveTouch = DETECTION_YES;
+   } else {
+    SensedCapacitiveTouch = DETECTION_NO;
+   }
 
    // Collision Sensor
-   if (isCollision()) {   // Add code in isCollision() function for lab 2 milestone 1
+   if (isCollision()) {
     SensedCollision = DETECTION_YES;
    } else {
     SensedCollision = DETECTION_NO;
@@ -316,16 +320,14 @@ bool isCollision() {
 // Function that detects if the capacitive sensor is being touched
 ////////////////////////////////////////////////////////////////////
 bool isCapacitiveSensorTouched() {
-  //In lab 4 you will add a capacitive sensor, and
-  // you will need to modify this function accordingly.
   static CapacitiveSensor sensor = CapacitiveSensor(CAP_SENSOR_SEND, CAP_SENSOR_RECEIVE);
   long tau = sensor.capacitiveSensor(CAP_SENSOR_SAMPLES); 
   Serial.print("TAU:");
   Serial.println(tau);
   if (tau < 10) {
-    SensedCapacitiveTouch = DETECTION_YES;
+    return true;
   } else {
-    SensedCapacitiveTouch = DETECTION_NO;
+    return false;
   }
 }
 
@@ -339,6 +341,7 @@ void RobotPlanning(void) {
   fsmCollisionDetection(); // Milestone 1
   fsmMoveServoUpAndDown(); // Milestone 3
   // Add Speed Control State Machine in lab 4
+  fsmCapacitiveSensorSpeedControl();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -399,7 +402,7 @@ void fsmSteerRobot() {
       //State transition logic
       if (SensedLightLeft == DETECTION_YES ) {
         steerRobotState = 1; //if light on left of robot, go to left state
-      } else if ( SensedLightRight == DETECTION_YES ) {
+      } else if (SensedLightRight == DETECTION_YES) {
         steerRobotState = 2; //if light on right of robot, go to right state
       }
       break;
@@ -454,13 +457,6 @@ void fsmSteerRobot() {
 void fsmMoveServoUpAndDown() {
   static int moveServoState = 0;
   //Serial.print(moveServoState); Serial.print("\t"); //uncomment for debugging
-  
-  // Milestone 3
-  //Create a state machine modeled after the ones in milestones 1 and 2
-  // to plan the servo action based off of the perception of the robot
-  //Remember no light or light in front = servo doesn't move
-  //Light above = servo moves up
-  //Light below = servo moves down
 
   switch(moveServoState){
     case 0:
@@ -511,19 +507,28 @@ void fsmMoveServoUpAndDown() {
 // touched, and changing the robot's speed.
 ////////////////////////////////////////////////////////////////////
 void fsmCapacitiveSensorSpeedControl() {
-  /*Implement in lab 4*/
   static int speedControlState = 0;
 
   switch(speedControlState){
-    case 0:
-      ActionRobotSpeed = SPEED_0;
-      
+    case 0: // checks if capacitor is touched
+      if (SensedCapacitiveTouch == DETECTION_YES){
+        speedControlState = 1;
+      }
+      break;
 
-    case 1:
+    case 1: // waits for capacitor release
+      if (SensedCapacitiveTouch == DETECTION_NO){
+        speedControlState = 2;
+      }
+      break;
 
-    case 2: 
+    case 2: // changes the speed of the robot
+      fsmChangeSpeed();
+      speedControlState = 0;
+      break;
 
-    case 3:
+    default:
+      speedControlState = 0;
   }
 }
 
@@ -531,18 +536,31 @@ void fsmCapacitiveSensorSpeedControl() {
 // State machine for cycling through the robot's speeds.
 ////////////////////////////////////////////////////////////////////
 void fsmChangeSpeed() {
-  /*Implement in lab 4*/
    static int speedChangeState = 0;
 
   switch(speedChangeState){
     case 0:
-      
+      ActionRobotSpeed = SPEED_0;
+      speedChangeState = 3;
+      break;
 
     case 1:
+      ActionRobotSpeed = SPEED_1;
+      speedChangeState = 0;
+      break;
 
     case 2: 
+      ActionRobotSpeed = SPEED_2;
+       speedChangeState = 1;
+      break;
 
     case 3:
+      ActionRobotSpeed = SPEED_3;
+      speedChangeState = 2;
+      break;
+
+    default:
+      speedChangeState = 0;
   }
   
 }
@@ -568,26 +586,20 @@ void RobotAction() {
   // This drives the main motors on the robot
   switch(ActionRobotDrive) {
     case DRIVE_STOP:
-      doTurnLedOff(H_BRIDGE_ENA);
-      doTurnLedOff(H_BRIDGE_ENB);
-      /* Add code in milestone 2 to turn off both left and right motors (LEDs right now). 
-        Use the doTurnLedOff() function */
-      /* DON'T FORGET TO USE YOUR LED VARIABLES AND NOT YOUR BUTTON VARIABLES FOR THIS!!! */
+      analogWrite(H_BRIDGE_ENA, 0);
+      analogWrite(H_BRIDGE_ENB, 0);
       break;
     case DRIVE_LEFT:
-      /* Add code in milestone 2 to turn off the right and on the left LEDs */
-      doTurnLedOn(H_BRIDGE_ENA);
-      doTurnLedOff(H_BRIDGE_ENB);
+      analogWrite(H_BRIDGE_ENA, ActionRobotSpeed);
+      analogWrite(H_BRIDGE_ENB, 0);
       break;
     case DRIVE_RIGHT:
-      /* Add code in milestone 2 */
-      doTurnLedOff(H_BRIDGE_ENA);
-      doTurnLedOn(H_BRIDGE_ENB);
+      analogWrite(H_BRIDGE_ENA, 0);
+      analogWrite(H_BRIDGE_ENB, ActionRobotSpeed);
       break;
     case DRIVE_STRAIGHT:
-      /* Add code in milestone 2 */
-      doTurnLedOn(H_BRIDGE_ENA);
-      doTurnLedOn(H_BRIDGE_ENB);
+      analogWrite(H_BRIDGE_ENA, ActionRobotSpeed);
+      analogWrite(H_BRIDGE_ENB, ActionRobotSpeed);
       break;
   }
   
