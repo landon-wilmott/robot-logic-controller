@@ -12,10 +12,6 @@
   individual elements needed to do these tasks that are general
   to most robotics.
 
-
-  Version History
-  1.1.3       11 January 2023   Creation by Dr. Mazzeo and TAs from 2022 version
-
  ********************************************************************/
 
 /* These initial includes allow you to use necessary libraries for
@@ -47,18 +43,18 @@ your sensors and servos. */
 
 
 // Motor enable pins - Lab 3
-// These will replace LEDs 2 and 4
 #define H_BRIDGE_ENA  5 //LED_2
 #define H_BRIDGE_ENB  3  //LED_4
 
 // Photodiode pins - Lab 5
 // These will replace buttons 1, 2, 4, 5
+#define PHOTODIODE_1 A7
 
 // Capacitive sensor pins - Lab 4
-#define CAP_SENSOR_SEND     11
+#define CAP_SENSOR_SEND     8
 #define CAP_SENSOR_RECEIVE  7
 #define CAP_SENSOR_SAMPLES 40
-#define CAP_SENSOR_TAU_THRESHOLD 25
+#define CAP_SENSOR_TAU_THRESHOLD 100
 
 
 // Ultrasonic sensor pin - Lab 6
@@ -75,6 +71,7 @@ your sensors and servos. */
 #define BUTTON_THRESHOLD 2.5
 
 // Voltage at which a photodiode voltage is considered to be present - Lab 5
+#define PHOTODIODE_LIGHT_THRESHOLD 3
 
 
 // Number of samples that the capacitor sensor will use in a measurement - Lab 4
@@ -196,7 +193,7 @@ void loop() {
     Serial.print(SensedCollision);
     Serial.print(SensedLightRight); 
     Serial.print(SensedLightDown);
-//    Serial.print(SensedCapacitiveTouch); - Lab 4
+    Serial.print(SensedCapacitiveTouch); - Lab 4
     Serial.print("\t");
   }
   
@@ -206,13 +203,14 @@ void loop() {
     Serial.print(ActionCollision);
     Serial.print(ActionRobotDrive); 
     Serial.print(ActionServoMove);
-    //    Serial.print(" "); Serial.print(ActionRobotSpeed); - Lab 4
+    Serial.print(" "); Serial.print(ActionRobotSpeed); - Lab 4
     Serial.print("\t");
   }
   RobotAction(); // ACTION
   Serial.print("\n");
 
-  isCapacitiveSensorTouched();
+  //isCapacitiveSensorTouched();
+  isLight(PHOTODIODE_1);
 }
 
 /**********************************************************************************************************
@@ -322,13 +320,21 @@ bool isCollision() {
 bool isCapacitiveSensorTouched() {
   static CapacitiveSensor sensor = CapacitiveSensor(CAP_SENSOR_SEND, CAP_SENSOR_RECEIVE);
   long tau = sensor.capacitiveSensor(CAP_SENSOR_SAMPLES); 
-  Serial.print("TAU:");
-  Serial.println(tau);
-  if (tau < 10) {
+  if (tau > CAP_SENSOR_TAU_THRESHOLD) {
     return true;
   } else {
     return false;
   }
+}
+
+////////////////////////////////////////////////////////////////////
+// Function that detects if light is present
+////////////////////////////////////////////////////////////////////
+bool isLight(int pin) {
+  float light = getPinVoltage(pin);
+  Serial.print("light: ");
+  Serial.println(light); // Use this line to test
+  return (light > PHOTODIODE_LIGHT_THRESHOLD);
 }
 
 
