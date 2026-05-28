@@ -29,12 +29,12 @@ your sensors and servos. */
 // Replace the pin numbers with those you connect to your robot
 
 // Button pins. These will be replaced with the photodiode variables in lab 5
-#define BUTTON_1  A2     // Far left Button - Servo Up
-#define BUTTON_2  A3     // Left middle button - Left Motor
+//#define BUTTON_1  A2     // Far left Button - Servo Up
+//#define BUTTON_2  A3     // Left middle button - Left Motor
 #define BUTTON_3  A4     // Middle Button - Collision
-#define BUTTON_4  A5     // Right middle button - Right Motor
-#define BUTTON_5  A6     // Far right button - Servo Down
-#define BUTTON_TEMP  A0
+//#define BUTTON_4  A5     // Right middle button - Right Motor
+//#define BUTTON_5  A6     // Far right button - Servo Down
+//#define BUTTON_TEMP  A0
 
 // LED pins (note that digital pins do not need "D" in front of them)
 #define LED_1   6       // Far Left LED - Servo Up
@@ -49,6 +49,9 @@ your sensors and servos. */
 // Photodiode pins - Lab 5
 // These will replace buttons 1, 2, 4, 5
 #define PHOTODIODE_1 A7
+#define PHOTODIODE_2 A6
+#define PHOTODIODE_3 A5
+#define PHOTODIODE_4 A3
 
 // Capacitive sensor pins - Lab 4
 #define CAP_SENSOR_SEND     8
@@ -139,6 +142,7 @@ int ActionCollision = COLLISION_OFF;
 
 // Main motors Action (using Definitions)
 int ActionRobotDrive = DRIVE_STOP;
+
 // Add speed action
 int ActionRobotSpeed = SPEED_3;
 
@@ -160,11 +164,11 @@ void setup() {
   pinMode(LED_5, OUTPUT);
   
   //Set up input pins
-  pinMode(BUTTON_1, INPUT);
-  pinMode(BUTTON_2, INPUT);
+  pinMode(PHOTODIODE_1, INPUT);
+  pinMode(PHOTODIODE_2, INPUT);
   pinMode(BUTTON_3, INPUT);
-  pinMode(BUTTON_4, INPUT);
-  pinMode(BUTTON_5, INPUT);
+  pinMode(PHOTODIODE_3, INPUT);
+  pinMode(PHOTODIODE_4, INPUT);
 
   //Set up capacitance pins
   pinMode(CAP_SENSOR_RECEIVE, INPUT);
@@ -193,7 +197,7 @@ void loop() {
     Serial.print(SensedCollision);
     Serial.print(SensedLightRight); 
     Serial.print(SensedLightDown);
-    Serial.print(SensedCapacitiveTouch); - Lab 4
+    Serial.print(SensedCapacitiveTouch);
     Serial.print("\t");
   }
   
@@ -203,14 +207,14 @@ void loop() {
     Serial.print(ActionCollision);
     Serial.print(ActionRobotDrive); 
     Serial.print(ActionServoMove);
-    Serial.print(" "); Serial.print(ActionRobotSpeed); - Lab 4
+    Serial.print(" "); Serial.print(ActionRobotSpeed);
     Serial.print("\t");
   }
   RobotAction(); // ACTION
   Serial.print("\n");
 
   //isCapacitiveSensorTouched();
-  isLight(PHOTODIODE_1);
+  //isLight(PHOTODIODE_1);
 }
 
 /**********************************************************************************************************
@@ -221,32 +225,30 @@ void RobotPerception() {
   // that can be used by the robot in subsequent stages
 
 
-  
   // Photodiode Sensing
   //Serial.print(getPinVoltage(BUTTON_2)); Serial.print("\t"); //uncomment for debugging
   
-  if (isButtonPushed(BUTTON_2)){
+  if (isLight(PHOTODIODE_1)){
     SensedLightLeft = DETECTION_YES;
   } else {
     SensedLightLeft = DETECTION_NO;
   }
   // Remember, you can find the buttons and which one goes to what towards the top of the file
-  if (isButtonPushed(BUTTON_4)){
+  if (isLight(PHOTODIODE_2)){
     SensedLightRight= DETECTION_YES;
   } else {
     SensedLightRight = DETECTION_NO;
   }
 
       
-  /* Add code to detect if light is up or down. Lab 2 milestone 3*/
   // logic for sensing button 1 presses
-  if (isButtonPushed(BUTTON_1)){
+  if (isLight(PHOTODIODE_3)){
     SensedLightDown = DETECTION_YES;
   } else {
     SensedLightDown = DETECTION_NO;
   }
   // logic for sensing button 5 pressed
-  if (isButtonPushed(BUTTON_5)){
+  if (isLight(PHOTODIODE_4)){
     SensedLightUp = DETECTION_YES;
   } else {
     SensedLightUp = DETECTION_NO;
@@ -585,7 +587,7 @@ void RobotAction() {
       break;
     case COLLISION_ON:
       doTurnLedOn(LED_3); 
-      Serial.print(getPinVoltage(BUTTON_TEMP));
+      //Serial.print(getPinVoltage(BUTTON_TEMP));
       break;
   }
   
