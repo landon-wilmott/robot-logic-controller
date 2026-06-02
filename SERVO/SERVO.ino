@@ -6,8 +6,8 @@
 
 // Parameters for servo control as well as instantiation
 #define SERVO_START_ANGLE 90
-#define SERVO_UP_LIMIT 135
-#define SERVO_DOWN_LIMIT 45
+#define SERVO_UP_LIMIT 180
+#define SERVO_DOWN_LIMIT 0
 static Servo myServo;
 
 void setup() {
@@ -29,13 +29,13 @@ void MoveServo() {
     
     switch(state) {
     case 0: // servo moving in positive direction
-      servoAngle += 1;
+      servoAngle = 0;
       if (servoAngle >= SERVO_UP_LIMIT) {
         state = 1;
       }
       break;
     case 1: // servo moving in negative direction
-      servoAngle -= 1;
+      servoAngle = 0;
       if (servoAngle <= SERVO_DOWN_LIMIT) {
         state = 0;
       }
@@ -44,4 +44,3 @@ void MoveServo() {
   myServo.write(servoAngle); // send angle to the servo 
   // the .write() function expects an integer between 0 and 180 degrees
 }
-

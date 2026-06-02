@@ -18,6 +18,8 @@
 your sensors and servos. */
 #include "Arduino.h"
 #include <CapacitiveSensor.h>
+#include <Servo.h>  // loads the Servo library
+#include <NewPing.h>
 
 //
 // Compiler defines: the compiler replaces each name with its assignment
@@ -34,12 +36,10 @@ your sensors and servos. */
 #define BUTTON_3  A4     // Middle Button - Collision
 //#define BUTTON_4  A5     // Right middle button - Right Motor
 //#define BUTTON_5  A6     // Far right button - Servo Down
-//#define BUTTON_TEMP  A0
 
 // LED pins (note that digital pins do not need "D" in front of them)
-#define LED_1   6       // Far Left LED - Servo Up
-#define LED_3   4       // Middle LED - Collision
-#define LED_5   2       // Far Right LED - Servo Down
+#define LED_3   2       // Middle LED - Collision
+
 
 
 // Motor enable pins - Lab 3
@@ -54,17 +54,20 @@ your sensors and servos. */
 #define PHOTODIODE_4 A3
 
 // Capacitive sensor pins - Lab 4
-#define CAP_SENSOR_SEND     8
-#define CAP_SENSOR_RECEIVE  7
+#define CAP_SENSOR_SEND     2
+#define CAP_SENSOR_RECEIVE  4 
 #define CAP_SENSOR_SAMPLES 40
 #define CAP_SENSOR_TAU_THRESHOLD 100
 
 
 // Ultrasonic sensor pin - Lab 6
 // This will replace button 3 and LED 3 will no longer be needed
+#define TRIGGER_PIN 11
+#define ECHO_PIN 12
 
 // Servo pin - Lab 6
 // This will replace LEDs 1 and 5
+#define SERVO_PIN 10
 
 /***********************************************************/
 // Configuration parameter definitions
@@ -73,17 +76,21 @@ your sensors and servos. */
 // Voltage at which a button is considered to be pressed
 #define BUTTON_THRESHOLD 2.5
 
-// Voltage at which a photodiode voltage is considered to be present - Lab 5
-#define PHOTODIODE_LIGHT_THRESHOLD 3
-
-
-// Number of samples that the capacitor sensor will use in a measurement - Lab 4
+// Voltage at which a photodiode voltage is considered to be present
+#define PHOTODIODE_LIGHT_THRESHOLD 3.25
 
 
 // Parameters for servo control as well as instantiation - Lab 6
+#define SERVO_START_ANGLE 90
+#define SERVO_UP_LIMIT 135
+#define SERVO_DOWN_LIMIT 0
+static Servo myServo;
 
 
 // Parameters for ultrasonic sensor and instantiation - Lab 6
+#define MAX_DISTANCE 200
+
+static NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 
 
 // Parameter to define when the ultrasonic sensor detects a collision - Lab 6
@@ -157,11 +164,9 @@ void setup() {
   Serial.begin(9600);
   
   //Set up output pins
-  pinMode(LED_1, OUTPUT);
   pinMode(H_BRIDGE_ENA, OUTPUT);
   pinMode(LED_3, OUTPUT);
   pinMode(H_BRIDGE_ENB, OUTPUT);
-  pinMode(LED_5, OUTPUT);
   
   //Set up input pins
   pinMode(PHOTODIODE_1, INPUT);
@@ -175,6 +180,14 @@ void setup() {
   pinMode(CAP_SENSOR_SEND, OUTPUT); 
 
   //Set up servo - Lab 6
+  pinMode(SERVO_PIN, OUTPUT);
+  myServo.attach(SERVO_PIN);
+  myServo.write(SERVO_START_ANGLE);
+
+  //Set up Sonar
+  pinMode(TRIGGER_PIN, OUTPUT); // pulse sent out through TRIGGER_PIN    
+  pinMode(ECHO_PIN, INPUT); // return signal read through ECHO_PIN
+
 
 }
 
@@ -186,7 +199,7 @@ void loop() {
   // This DebugStateOutput flag can be used to easily turn on the
   // serial debugging to know what the robot is perceiving and what
   // actions the robot wants to take.
-  int DebugStateOutput = false; // Change false to true to debug
+  int DebugStateOutput = true; // Change false to true to debug
   
   
   RobotPerception(); // PERCEPTION
@@ -212,9 +225,6 @@ void loop() {
   }
   RobotAction(); // ACTION
   Serial.print("\n");
-
-  //isCapacitiveSensorTouched();
-  //isLight(PHOTODIODE_1);
 }
 
 /**********************************************************************************************************
@@ -226,29 +236,30 @@ void RobotPerception() {
 
 
   // Photodiode Sensing
-  //Serial.print(getPinVoltage(BUTTON_2)); Serial.print("\t"); //uncomment for debugging
-  
-  if (isLight(PHOTODIODE_1)){
+  // Serial.print(getPinVoltage(BUTTON_2)); Serial.print("\t"); //uncomment for debugging
+
+  // logic for sensing light on photodiode 1
+  if (isLight(PHOTODIODE_3)){
     SensedLightLeft = DETECTION_YES;
   } else {
     SensedLightLeft = DETECTION_NO;
   }
-  // Remember, you can find the buttons and which one goes to what towards the top of the file
-  if (isLight(PHOTODIODE_2)){
+  // logic for sensing light on photodiode 2
+  if (isLight(PHOTODIODE_4)){
     SensedLightRight= DETECTION_YES;
   } else {
     SensedLightRight = DETECTION_NO;
   }
 
       
-  // logic for sensing button 1 presses
-  if (isLight(PHOTODIODE_3)){
+  // logic for sensing light on photodiode 3
+  if (isLight(PHOTODIODE_1)){
     SensedLightDown = DETECTION_YES;
   } else {
     SensedLightDown = DETECTION_NO;
   }
-  // logic for sensing button 5 pressed
-  if (isLight(PHOTODIODE_4)){
+  // logic for sensing light on photodiode 4
+  if (isLight(PHOTODIODE_2)){
     SensedLightUp = DETECTION_YES;
   } else {
     SensedLightUp = DETECTION_NO;
@@ -309,11 +320,20 @@ bool isCollision() {
   //In lab 6 you will add a sonar sensor to detect collision and
   // the code for the sonar sensor will go in this function.
   // Until then we will use a button to model the sensor.
-  if (isButtonPushed(BUTTON_3)) {
-    return true;
+//  if (isButtonPushed(BUTTON_3)) {
+//    return true;
+//  } else {
+//    return false;
+//  }
+
+
+  int sonar_distance = sonar.ping_cm(); // If the distance is too big, it returns 0.
+  if(sonar_distance != 0){ 
+    return (sonar_distance < 10);
   } else {
-    return false;
+  return false;
   }
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -334,8 +354,8 @@ bool isCapacitiveSensorTouched() {
 ////////////////////////////////////////////////////////////////////
 bool isLight(int pin) {
   float light = getPinVoltage(pin);
-  Serial.print("light: ");
-  Serial.println(light); // Use this line to test
+  //Serial.print("light: ");
+  //Serial.println(light); // Use this line to test
   return (light > PHOTODIODE_LIGHT_THRESHOLD);
 }
 
@@ -623,20 +643,28 @@ void MoveServo() {
   // Note that there needs to be some logic in the action of moving
   // the servo so that it does not exceed its range
   /* Add CurrentServoAngle in lab 6 */
+   //static int state = SERVO_MOVE_STOP;
+   static int servoAngle = SERVO_START_ANGLE;
   switch(ActionServoMove) {
     case SERVO_MOVE_STOP:
-      doTurnLedOff(LED_1);
-      doTurnLedOff(LED_5);
       break;
     case SERVO_MOVE_UP:
-      doTurnLedOn(LED_5);
+      if (servoAngle <= SERVO_DOWN_LIMIT) {
+        ActionServoMove = SERVO_MOVE_STOP;
+      } else {
+        servoAngle -= 1;
+      }
       break;
     case SERVO_MOVE_DOWN:
-      doTurnLedOn(LED_1);
+      if (servoAngle >= SERVO_UP_LIMIT) {
+        ActionServoMove = SERVO_MOVE_STOP;
+      } else{
+        servoAngle += 1;
+      }
       break;
   }
+  myServo.write(servoAngle); // send angle to the servo 
 }
-
 
 
 /**********************************************************************************************************

@@ -61,4 +61,3 @@ void loop() {
   float distance = getDistanceSmoothed();
   Serial.println(distance);  
 }
-
