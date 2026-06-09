@@ -27,20 +27,6 @@ your sensors and servos. */
 //
 
 /***********************************************************/
-// Hardware pin definitions
-// Replace the pin numbers with those you connect to your robot
-
-// Button pins. These will be replaced with the photodiode variables in lab 5
-//#define BUTTON_1  A2     // Far left Button - Servo Up
-//#define BUTTON_2  A3     // Left middle button - Left Motor
-#define BUTTON_3  A4     // Middle Button - Collision
-//#define BUTTON_4  A5     // Right middle button - Right Motor
-//#define BUTTON_5  A6     // Far right button - Servo Down
-
-// LED pins (note that digital pins do not need "D" in front of them)
-#define LED_3   2       // Middle LED - Collision
-
-
 
 // Motor enable pins - Lab 3
 #define H_BRIDGE_ENA  5 //LED_2
@@ -62,8 +48,8 @@ your sensors and servos. */
 
 // Ultrasonic sensor pin - Lab 6
 // This will replace button 3 and LED 3 will no longer be needed
-#define TRIGGER_PIN 11
-#define ECHO_PIN 12
+#define TRIGGER_PIN 6
+#define ECHO_PIN 7
 
 // Servo pin - Lab 6
 // This will replace LEDs 1 and 5
@@ -71,13 +57,9 @@ your sensors and servos. */
 
 /***********************************************************/
 // Configuration parameter definitions
-// Replace the parameters with those that are appropriate for your robot
-
-// Voltage at which a button is considered to be pressed
-#define BUTTON_THRESHOLD 2.5
 
 // Voltage at which a photodiode voltage is considered to be present
-#define PHOTODIODE_LIGHT_THRESHOLD 3.25
+#define PHOTODIODE_LIGHT_THRESHOLD 3.0
 
 
 // Parameters for servo control as well as instantiation - Lab 6
@@ -112,6 +94,7 @@ static NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 // Collision definitions
 #define COLLISION_ON   0
 #define COLLISION_OFF  1
+#define COLLISION_DISTANCE 20
 
 // Driving direction definitions
 #define DRIVE_STOP      0
@@ -165,13 +148,13 @@ void setup() {
   
   //Set up output pins
   pinMode(H_BRIDGE_ENA, OUTPUT);
-  pinMode(LED_3, OUTPUT);
+  //pinMode(LED_3, OUTPUT);
   pinMode(H_BRIDGE_ENB, OUTPUT);
   
   //Set up input pins
   pinMode(PHOTODIODE_1, INPUT);
   pinMode(PHOTODIODE_2, INPUT);
-  pinMode(BUTTON_3, INPUT);
+  //pinMode(BUTTON_3, INPUT);
   pinMode(PHOTODIODE_3, INPUT);
   pinMode(PHOTODIODE_4, INPUT);
 
@@ -199,7 +182,7 @@ void loop() {
   // This DebugStateOutput flag can be used to easily turn on the
   // serial debugging to know what the robot is perceiving and what
   // actions the robot wants to take.
-  int DebugStateOutput = true; // Change false to true to debug
+  int DebugStateOutput = false; // Change false to true to debug
   
   
   RobotPerception(); // PERCEPTION
@@ -246,7 +229,7 @@ void RobotPerception() {
   }
   // logic for sensing light on photodiode 2
   if (isLight(PHOTODIODE_4)){
-    SensedLightRight= DETECTION_YES;
+    SensedLightRight = DETECTION_YES;
   } else {
     SensedLightRight = DETECTION_NO;
   }
@@ -296,44 +279,15 @@ float getPinVoltage(int pin) {
 }
 
 ////////////////////////////////////////////////////////////////////
-// Function to determine if a button is pushed or not
-////////////////////////////////////////////////////////////////////
-bool isButtonPushed(int button_pin) {
-  //This function can be used to determine if a said button is pushed.
-  //Remember that when the voltage is 0, it's only close to zero.
-  //Hint: Call the getPinVoltage function and if that value is greater
-  // than the BUTTON_THRESHOLD variable toward the top of the file, return true.
-  if (getPinVoltage(button_pin) > BUTTON_THRESHOLD){
-    return true;
-  } else {
-    return false;
-  }
-}
-
-
-////////////////////////////////////////////////////////////////////
 // Function that detects if there is an obstacle in front of robot
 ////////////////////////////////////////////////////////////////////
 bool isCollision() {
-  //This is where you add code that tests if the collision button 
-  // was pushed (BUTTON_3)
-  //In lab 6 you will add a sonar sensor to detect collision and
-  // the code for the sonar sensor will go in this function.
-  // Until then we will use a button to model the sensor.
-//  if (isButtonPushed(BUTTON_3)) {
-//    return true;
-//  } else {
-//    return false;
-//  }
-
-
   int sonar_distance = sonar.ping_cm(); // If the distance is too big, it returns 0.
   if(sonar_distance != 0){ 
-    return (sonar_distance < 10);
+    return (sonar_distance < COLLISION_DISTANCE);
   } else {
   return false;
   }
-
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -354,8 +308,10 @@ bool isCapacitiveSensorTouched() {
 ////////////////////////////////////////////////////////////////////
 bool isLight(int pin) {
   float light = getPinVoltage(pin);
-  //Serial.print("light: ");
-  //Serial.println(light); // Use this line to test
+  Serial.print("pin ");
+  Serial.print(pin);
+  Serial.print(": ");
+  Serial.println(light); // Use this line to test
   return (light > PHOTODIODE_LIGHT_THRESHOLD);
 }
 
@@ -386,7 +342,7 @@ void fsmCollisionDetection() {
       ActionCollision = COLLISION_ON; // Sets the action to turn on the collision LED
 
       // stops robot from moving if collision is detected
-      ActionRobotDrive = DRIVE_STOP;      
+      ActionRobotDrive = DRIVE_LEFT;      
       
       //State transition logic
       if ( SensedCollision == DETECTION_NO) {
@@ -601,7 +557,7 @@ void RobotAction() {
   // Here the results of planning are implented so the robot does something
 
   // This turns the collision LED on and off
-  switch(ActionCollision) {
+  /*switch(ActionCollision) {
     case COLLISION_OFF:
       doTurnLedOff(LED_3);
       break;
@@ -609,7 +565,7 @@ void RobotAction() {
       doTurnLedOn(LED_3); 
       //Serial.print(getPinVoltage(BUTTON_TEMP));
       break;
-  }
+  }*/
   
   // This drives the main motors on the robot
   switch(ActionRobotDrive) {
@@ -619,10 +575,10 @@ void RobotAction() {
       break;
     case DRIVE_LEFT:
       analogWrite(H_BRIDGE_ENA, ActionRobotSpeed);
-      analogWrite(H_BRIDGE_ENB, 0);
+      analogWrite(H_BRIDGE_ENB, ActionRobotSpeed / 5);
       break;
     case DRIVE_RIGHT:
-      analogWrite(H_BRIDGE_ENA, 0);
+      analogWrite(H_BRIDGE_ENA, ActionRobotSpeed / 5);
       analogWrite(H_BRIDGE_ENB, ActionRobotSpeed);
       break;
     case DRIVE_STRAIGHT:
