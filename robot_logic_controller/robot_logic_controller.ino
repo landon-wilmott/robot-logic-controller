@@ -94,7 +94,7 @@ static NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 // Collision definitions
 #define COLLISION_ON   0
 #define COLLISION_OFF  1
-#define COLLISION_DISTANCE 20
+#define COLLISION_DISTANCE 30
 
 // Driving direction definitions
 #define DRIVE_STOP      0
@@ -575,10 +575,10 @@ void RobotAction() {
       break;
     case DRIVE_LEFT:
       analogWrite(H_BRIDGE_ENA, ActionRobotSpeed);
-      analogWrite(H_BRIDGE_ENB, ActionRobotSpeed / 5);
+      analogWrite(H_BRIDGE_ENB, 0);
       break;
     case DRIVE_RIGHT:
-      analogWrite(H_BRIDGE_ENA, ActionRobotSpeed / 5);
+      analogWrite(H_BRIDGE_ENA, 0);
       analogWrite(H_BRIDGE_ENB, ActionRobotSpeed);
       break;
     case DRIVE_STRAIGHT:
